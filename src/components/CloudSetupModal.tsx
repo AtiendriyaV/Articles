@@ -159,105 +159,62 @@ export async function uploadArticle(payload: PublishArticlePayload) {
 }`
     },
     'publish.ts': {
-      filename: 'publish.ts',
-      path: 'app/actions/publish.ts',
-      code: `'use server';
-
-import { revalidatePath } from 'next/cache';
-import { uploadArticle, calculateReadTime } from '@/lib/googleDrive';
-import { PublishArticlePayload } from '@/lib/types';
-
-export async function publishArticleAction(formData: FormData | PublishArticlePayload) {
-  const passcode = formData instanceof FormData ? formData.get('passcode') as string : formData.passcode;
-  const serverSecret = process.env.ADMIN_SECRET_KEY || 'alpha-research-2026';
+      filename: 'publishRoute.ts',
+      path: 'server.ts',
+      code: `// Express API route in server.ts
+app.post('/api/publish', async (req, res) => {
+  const { title, slug, content, excerpt, tags, passcode } = req.body;
+  const serverSecret = process.env.ADMIN_SECRET_KEY || 'your-secret-key';
   
   if (!passcode || passcode.trim() !== serverSecret.trim()) {
-    return { success: false, message: 'Unauthorized: Invalid Admin Secret Key' };
+    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid Admin Secret Key' });
   }
 
-  const payload: PublishArticlePayload = formData instanceof FormData ? {
-    title: formData.get('title') as string,
-    slug: formData.get('slug') as string,
-    content: formData.get('content') as string,
-    excerpt: formData.get('excerpt') as string,
-    tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
-    readTime: calculateReadTime(formData.get('content') as string),
+  const result = await uploadArticle({
+    title,
+    slug,
+    content,
+    excerpt: excerpt || content.slice(0, 150) + '...',
+    tags: tags || ['Equity Research'],
+    readTime: calculateReadTime(content),
     author: 'Atiendriya Verma',
-  } : formData;
+  });
 
-  const res = await uploadArticle(payload);
-  
-  // Revalidate Next.js ISR Cache
-  revalidatePath('/');
-  revalidatePath(\`/blog/\${payload.slug}\`);
-
-  return { success: true, message: 'Published directly to Google Drive!', fileId: res.fileId, slug: payload.slug };
-}`
+  return res.json({ success: result.success, message: result.message, slug });
+});`
     },
-    'admin-page.tsx': {
-      filename: 'page.tsx',
-      path: 'app/admin/write/page.tsx',
-      code: `'use client';
+    'admin-portal.tsx': {
+      filename: 'AdminPortal.tsx',
+      path: 'src/components/AdminPortal.tsx',
+      code: `// Admin Writer Portal Component
+import React, { useState } from 'react';
 
-import React, { useState, useTransition } from 'react';
-import { publishArticleAction } from '@/app/actions/publish';
-
-export default function AdminWritePage() {
+export default function AdminPortal() {
   const [passcode, setPasscode] = useState('');
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [content, setContent] = useState('# Investment Thesis\\n\\n### Key Highlights...');
-  const [isPending, startTransition] = useTransition();
+  const [content, setContent] = useState('# Investment Memorandum\\n\\n### Key Highlights...');
 
-  const handlePublish = () => {
-    startTransition(async () => {
-      const res = await publishArticleAction({
+  const handlePublish = async () => {
+    const res = await fetch('/api/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         title,
-        slug,
         content,
-        excerpt: content.slice(0, 150) + '...',
-        tags: ['Equity Research'],
         passcode,
-      });
-      alert(res.message);
+        author: 'Atiendriya Verma'
+      })
     });
+    const data = await res.json();
+    alert(data.message);
   };
 
-  if (!isUnlocked) {
-    return (
-      <div className="p-8 max-w-md mx-auto">
-        <h2 className="text-lg font-bold mb-4">Admin Passcode</h2>
-        <input 
-          type="password" 
-          value={passcode} 
-          onChange={(e) => setPasscode(e.target.value)} 
-          className="border p-2 w-full mb-4" 
-          placeholder="Enter ADMIN_SECRET_KEY"
-        />
-        <button onClick={() => setIsUnlocked(true)} className="bg-black text-white px-4 py-2">
-          Unlock
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <input 
-        value={title} 
-        onChange={(e) => setTitle(e.target.value)} 
-        placeholder="Article Title" 
-        className="text-2xl font-bold w-full border-b mb-4 p-2"
-      />
-      <textarea 
-        value={content} 
-        onChange={(e) => setContent(e.target.value)} 
-        className="w-full h-96 border p-4 font-mono text-sm"
-      />
-      <button onClick={handlePublish} disabled={isPending} className="mt-4 bg-black text-white px-6 py-2">
-        {isPending ? 'Publishing...' : 'Publish to Google Drive'}
-      </button>
+    <div>
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+      <textarea value={content} onChange={(e) => setContent(e.target.value)} />
+      <button onClick={handlePublish}>Publish</button>
     </div>
   );
 }`

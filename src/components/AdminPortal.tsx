@@ -240,16 +240,8 @@ Summarize your core insights in three clear, memorable points that leave the rea
             </button>
           </form>
 
-          {/* Quick Demo Key Pill */}
-          <div className="mt-4 pt-4 border-t border-[#e7e5e4] flex items-center justify-between text-xs text-[#78716c]">
-            <button
-              onClick={() => {
-                setPasscode('alpha-research-2026');
-              }}
-              className="text-[11px] font-mono text-[#1c1917] underline hover:text-black cursor-pointer"
-            >
-              Fill Default Key: alpha-research-2026
-            </button>
+          {/* Navigation Controls */}
+          <div className="mt-4 pt-4 border-t border-[#e7e5e4] flex items-center justify-end text-xs text-[#78716c]">
             <button
               onClick={onReturnHome}
               className="hover:text-[#1c1917] flex items-center gap-1 cursor-pointer"
