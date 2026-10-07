@@ -39,7 +39,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ onExploreArticles, onOpenW
                   Atiendriya Verma
                 </h1>
                 <p className="text-sm font-sans-clean text-[#57534e] mt-1">
-                  Aspiring Equity Research Analyst & Portfolio Manager · MBA (Finance & Business Analysis) · CFA Candidate
+                  Aspiring Equity Research Analyst & Portfolio Manager · MBA (Finance & Business Analysis)
                 </p>
               </div>
 
@@ -76,7 +76,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ onExploreArticles, onOpenW
 
           <div className="font-serif text-[#292524] text-base sm:text-lg leading-[1.85] space-y-5">
             <p>
-              I am pursuing my <strong>MBA in Finance & Business Analysis at IILM University</strong> and actively preparing as a <strong>CFA Program candidate</strong>. My academic and analytical journey is driven by an unyielding fascination with how capital allocators assess uncertainty, distinguish structural trends from cyclical noise, and price enterprise cash flows.
+              I am pursuing my MBA in Finance & Business Analysis at IILM University. My academic and analytical journey is driven by an unyielding fascination with how capital allocators assess uncertainty, distinguish structural trends from cyclical noise, and price enterprise cash flows.
             </p>
             <p>
               Modern capital markets demand a dual mastery: deep qualitative grounding in business fundamentals, corporate governance, and macroeconomic policy, paired with modern quantitative data science tools (Python, statistical regression, cross-sectional factor models). I bridge both domains.

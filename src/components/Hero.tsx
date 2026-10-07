@@ -26,7 +26,7 @@ export const Hero: React.FC<HeroProps> = ({ onExploreArticles, onViewAbout }) =>
 
         {/* Narrative Bio */}
         <p className="text-base sm:text-lg font-serif text-[#44403c] leading-relaxed max-w-3xl mb-8">
-          Welcome to my research memorandums and writing portfolio. I am <strong className="text-[#1c1917] font-semibold">Atiendriya Verma</strong>—an aspiring Equity Research Analyst and Portfolio Manager, MBA in Finance & Business Analysis at IILM University, and CFA Program candidate. I specialize in synthesizing bottom-up fundamental DCF valuation and Indian corporate capex cycles with Python-driven statistical factor modeling.
+          Welcome to my research memorandums and writing portfolio. I am <strong className="text-[#1c1917] font-semibold">Atiendriya Verma</strong>. I am pursuing my MBA in Finance & Business Analysis at IILM University. My academic and analytical journey is driven by an unyielding fascination with how capital allocators assess uncertainty, distinguish structural trends from cyclical noise, and price enterprise cash flows.
         </p>
 
         {/* Core Pillars / Unboxed Metadata */}
@@ -48,8 +48,8 @@ export const Hero: React.FC<HeroProps> = ({ onExploreArticles, onViewAbout }) =>
           <div className="flex items-start gap-2.5">
             <Award className="w-4 h-4 text-[#1c1917] shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold text-[#1c1917]">CFA Candidate & MBA</div>
-              <div className="text-[11px] text-[#78716c]">Finance & Business Analysis at IILM University</div>
+              <div className="font-semibold text-[#1c1917]">MBA & Business Analysis</div>
+              <div className="text-[11px] text-[#78716c]">Finance & Analytics at IILM University</div>
             </div>
           </div>
         </div>

@@ -19,7 +19,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenSetupModal }) 
             Atiendriya Verma
           </div>
           <p className="max-w-md text-[#57534e] text-xs leading-relaxed">
-            Equity Research & Macroeconomic Insights · MBA in Finance & Business Analysis (IILM University) · CFA Program Candidate.
+            Equity Research & Macroeconomic Insights · MBA in Finance & Business Analysis (IILM University).
           </p>
         </div>
 

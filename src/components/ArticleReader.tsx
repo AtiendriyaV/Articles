@@ -317,7 +317,7 @@ export const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onBack, o
                 </a>
               </div>
               <p className="text-xs font-serif text-[#57534e] leading-relaxed">
-                Aspiring Equity Research Analyst and Portfolio Manager. MBA in Finance & Business Analysis at IILM University, CFA Program candidate. Researches fundamental valuation models (DCF & relative multiples), Indian macro dynamics, and data science applications in capital markets.
+                Aspiring Equity Research Analyst and Portfolio Manager. Pursuing MBA in Finance & Business Analysis at IILM University. Researches fundamental valuation models (DCF & relative multiples), Indian macro dynamics, and data science applications in capital markets.
               </p>
               <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-mono text-[#78716c]">
                 <a
