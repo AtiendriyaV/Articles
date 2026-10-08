@@ -5,20 +5,19 @@ import { ArticleList } from './components/ArticleList';
 import { ArticleReader } from './components/ArticleReader';
 import { AboutView } from './components/AboutView';
 import { AdminPortal } from './components/AdminPortal';
-import { CloudSetupModal } from './components/CloudSetupModal';
 import { Footer } from './components/Footer';
-import { Article, DriveConfigStatus } from '@/lib/types';
+import { Article } from '@/lib/types';
 import { SEED_ARTICLES } from '@/lib/seedData';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'about' | 'write' | 'article'>('home');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [articles, setArticles] = useState<Article[]>(SEED_ARTICLES);
   const [isLoading, setIsLoading] = useState(false);
-  const [driveStatus, setDriveStatus] = useState<DriveConfigStatus | null>(null);
-  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(true);
 
-  // Load articles from Express server / Google Drive API
+  // Load articles from backend storage
   const loadArticles = useCallback(async (forceRevalidate = false) => {
     setIsLoading(true);
     try {
@@ -31,22 +30,9 @@ export default function App() {
         }
       }
     } catch (err) {
-      console.warn('Using seeded articles due to fetch failure:', err);
+      console.warn('Using seeded articles due to network fallback:', err);
     } finally {
       setIsLoading(false);
-    }
-  }, []);
-
-  // Check Drive Status
-  const loadDriveStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/drive/status');
-      if (res.ok) {
-        const data = await res.json();
-        setDriveStatus(data);
-      }
-    } catch (err) {
-      console.warn('Could not check drive status:', err);
     }
   }, []);
 
@@ -80,12 +66,14 @@ export default function App() {
 
   useEffect(() => {
     loadArticles();
-    loadDriveStatus();
-  }, [loadArticles, loadDriveStatus]);
+  }, [loadArticles]);
 
   const handleNavigate = (view: 'home' | 'about' | 'write') => {
     setCurrentView(view);
     setSelectedArticle(null);
+    if (view !== 'write') {
+      setEditingArticle(null);
+    }
     let path = '/';
     if (view === 'about') path = '/about';
     if (view === 'write') path = '/admin/write';
@@ -93,16 +81,61 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleToggleAdmin = () => {
+    if (isAdmin) {
+      // Navigate to write portal
+      handleNavigate('write');
+    } else {
+      // Grant instant admin access and navigate to write portal
+      localStorage.setItem('atiendriya_admin_auth', 'true');
+      setIsAdmin(true);
+      handleNavigate('write');
+    }
+  };
+
+  const handleEditArticle = (article: Article) => {
+    // Automatically enable admin mode so user has full edit access without interruption
+    localStorage.setItem('atiendriya_admin_auth', 'true');
+    setIsAdmin(true);
+    setEditingArticle(article);
+    setSelectedArticle(null);
+    setCurrentView('write');
+    window.history.pushState({}, '', '/admin/write');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelectArticle = (article: Article) => {
     setSelectedArticle(article);
+    setEditingArticle(null);
     setCurrentView('article');
     window.history.pushState({}, '', `/blog/${article.slug}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleArticlePublished = (newArticle: Article) => {
-    setArticles((prev) => [newArticle, ...prev.filter((a) => a.slug !== newArticle.slug)]);
-    handleSelectArticle(newArticle);
+  const handleArticlePublished = (savedArticle: Article) => {
+    const priorSlug = editingArticle?.slug;
+    setArticles((prev) => [
+      savedArticle, 
+      ...prev.filter((a) => a.slug !== savedArticle.slug && a.slug !== priorSlug)
+    ]);
+    setEditingArticle(null);
+    handleSelectArticle(savedArticle);
+  };
+
+  const handleArticleUpdated = (updatedArticle: Article) => {
+    setArticles((prev) => [
+      updatedArticle,
+      ...prev.filter((a) => a.slug !== updatedArticle.slug && a.slug !== selectedArticle?.slug)
+    ]);
+    setSelectedArticle(updatedArticle);
+  };
+
+  const handleDeleteArticle = (slug: string) => {
+    setArticles((prev) => prev.filter((a) => a.slug !== slug));
+    if (selectedArticle?.slug === slug) {
+      setSelectedArticle(null);
+      handleNavigate('home');
+    }
   };
 
   return (
@@ -111,8 +144,8 @@ export default function App() {
       <Navbar
         currentView={currentView}
         onNavigate={handleNavigate}
-        driveStatus={driveStatus}
-        onOpenSetupModal={() => setIsSetupModalOpen(true)}
+        isAdmin={isAdmin}
+        onToggleAdmin={handleToggleAdmin}
       />
 
       {/* Main Content View Switcher */}
@@ -132,6 +165,7 @@ export default function App() {
               <ArticleList
                 articles={articles}
                 onSelectArticle={handleSelectArticle}
+                onEditArticle={handleEditArticle}
                 isLoading={isLoading}
                 onRefresh={() => loadArticles(true)}
               />
@@ -148,9 +182,16 @@ export default function App() {
 
         {currentView === 'write' && (
           <AdminPortal
+            key={editingArticle?.slug || 'new-article'}
+            initialArticle={editingArticle}
+            isAdmin={isAdmin}
+            onSetAdmin={setIsAdmin}
             onArticlePublished={handleArticlePublished}
-            onReturnHome={() => handleNavigate('home')}
-            onOpenSetupModal={() => setIsSetupModalOpen(true)}
+            onDeleteArticle={handleDeleteArticle}
+            onReturnHome={() => {
+              setEditingArticle(null);
+              handleNavigate('home');
+            }}
           />
         )}
 
@@ -158,6 +199,8 @@ export default function App() {
           <ArticleReader
             article={selectedArticle}
             onBack={() => handleNavigate('home')}
+            onEditArticle={handleEditArticle}
+            onArticleUpdated={handleArticleUpdated}
           />
         )}
       </main>
@@ -165,15 +208,7 @@ export default function App() {
       {/* Footer */}
       <Footer
         onNavigate={handleNavigate}
-        onOpenSetupModal={() => setIsSetupModalOpen(true)}
-      />
-
-      {/* Google Cloud Console Setup & Next.js Architecture Modal */}
-      <CloudSetupModal
-        isOpen={isSetupModalOpen}
-        onClose={() => setIsSetupModalOpen(false)}
-        driveStatus={driveStatus}
-        onRefreshStatus={loadDriveStatus}
+        isAdmin={isAdmin}
       />
     </div>
   );

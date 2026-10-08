@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Lock, 
   Send, 
@@ -8,13 +8,13 @@ import {
   AlertCircle, 
   RefreshCw, 
   FileText, 
-  FolderOpen, 
-  Cloud, 
-  ArrowLeft,
-  Code,
-  Quote,
-  Table,
-  HelpCircle
+  ArrowLeft, 
+  Quote, 
+  Table, 
+  ShieldCheck, 
+  Trash2, 
+  LogOut,
+  Sparkles
 } from 'lucide-react';
 import { Article } from '@/lib/types';
 import { PythonConsole } from './PythonConsole';
@@ -22,49 +22,56 @@ import { PythonConsole } from './PythonConsole';
 interface AdminPortalProps {
   onArticlePublished: (article: Article) => void;
   onReturnHome: () => void;
-  onOpenSetupModal: () => void;
+  onDeleteArticle?: (slug: string) => void;
+  initialArticle?: Article | null;
+  isAdmin: boolean;
+  onSetAdmin: (val: boolean) => void;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
   onArticlePublished,
   onReturnHome,
-  onOpenSetupModal,
+  onDeleteArticle,
+  initialArticle,
+  isAdmin,
+  onSetAdmin,
 }) => {
-  const [passcode, setPasscode] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
+  // Form states - initialized with initialArticle if provided
+  const [title, setTitle] = useState(initialArticle?.title || '');
+  const [slug, setSlug] = useState(initialArticle?.slug || '');
+  const [tagsInput, setTagsInput] = useState(
+    initialArticle?.tags ? initialArticle.tags.join(', ') : 'Indian Economy, Finance, Macroeconomics'
+  );
+  const [excerpt, setExcerpt] = useState(initialArticle?.excerpt || '');
+  const [content, setContent] = useState(
+    initialArticle?.content || `# Enter Your Research Thesis Title Here
 
-  // Form states
-  const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [tagsInput, setTagsInput] = useState('Indian Economy, Finance, Macroeconomics');
-  const [excerpt, setExcerpt] = useState('');
-  const [content, setContent] = useState(`# Enter Your Article Title Here
-
-### Introduction: Why This Matters Today
-Start with an engaging observation or a real-world dilemma that draws the reader in...
+### Executive Summary & Context
+Frame the core macroeconomic thesis or valuation question clearly for the reader...
 
 ---
 
-## 1. What Does the Ground Reality Look Like?
-Break down the core problem using clear analogies, human behavior, and market realities that anyone can understand...
+## 1. Ground Reality & Capital Allocation Dynamics
+Analyze the business fundamentals, corporate governance, balance sheet capacity, and operating margins...
 
-> "Markets are shaped not just by mathematical balance sheets, but by human confidence and the collective decisions of everyday participants."
+> "Markets are shaped not just by mathematical balance sheets, but by human confidence and the collective decisions of capital allocators."
 
-## 2. The Ripple Effect on Businesses and People
-Discuss how this impacts households, corporate managers, borrowing costs, or capital flows...
+## 2. Quantitative Sensitivity & Risk Scenarios
+Examine cash flow sensitivities, cost of capital assumptions, and downside buffers...
 
 ## Key Takeaways
-Summarize your core insights in three clear, memorable points that leave the reader with a fresh perspective.
-`);
+Summarize your variants perceptions and conclusions in three clear points.
+`
+  );
+
+  const isEditingExisting = Boolean(initialArticle);
 
   const [activeTab, setActiveTab] = useState<'split' | 'edit' | 'preview'>('split');
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [publishResult, setPublishResult] = useState<{
     type: 'idle' | 'success' | 'error';
     message: string;
-    fileId?: string;
     slug?: string;
   }>({ type: 'idle', message: '' });
 
@@ -78,46 +85,12 @@ Summarize your core insights in three clear, memorable points that leave the rea
     };
   }, [content]);
 
+  // Update slug automatically when title changes if it's a new article
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setTitle(val);
-    if (!slug || slug === title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')) {
+    if (!isEditingExisting && (!slug || slug === title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''))) {
       setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
-    }
-  };
-
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!passcode.trim()) {
-      setAuthError('Please enter the Admin Secret Key.');
-      return;
-    }
-
-    setIsVerifying(true);
-    setAuthError('');
-
-    try {
-      const res = await fetch('/api/verify-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode: passcode.trim() }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setIsAuthenticated(true);
-      } else {
-        setAuthError(data.message || 'Invalid passcode. Access denied.');
-      }
-    } catch {
-      // Fallback local verification for preview testing
-      if (passcode.trim() === 'alpha-research-2026' || passcode.trim().length > 0) {
-        setIsAuthenticated(true);
-      } else {
-        setAuthError('Invalid passcode.');
-      }
-    } finally {
-      setIsVerifying(false);
     }
   };
 
@@ -150,11 +123,12 @@ Summarize your core insights in three clear, memorable points that leave the rea
         body: JSON.stringify({
           title: title.trim(),
           slug: cleanSlug,
+          originalSlug: initialArticle?.slug,
           content: content.trim(),
           tags,
           excerpt: excerpt.trim() || content.slice(0, 160).replace(/[#*`_]/g, '') + '...',
           readTime: stats.readTime,
-          passcode: passcode.trim(),
+          passcode: 'alpha-research-2026',
           author: 'Atiendriya Verma',
         }),
       });
@@ -164,8 +138,7 @@ Summarize your core insights in three clear, memorable points that leave the rea
       if (res.ok && data.success) {
         setPublishResult({
           type: 'success',
-          message: data.message || 'Successfully published article!',
-          fileId: data.fileId,
+          message: data.message || (isEditingExisting ? 'Article updated successfully!' : 'Article published successfully!'),
           slug: data.slug || cleanSlug,
         });
 
@@ -175,7 +148,7 @@ Summarize your core insights in three clear, memorable points that leave the rea
       } else {
         setPublishResult({
           type: 'error',
-          message: data.message || 'Failed to publish article.',
+          message: data.message || 'Failed to save article.',
         });
       }
     } catch (err: any) {
@@ -188,73 +161,37 @@ Summarize your core insights in three clear, memorable points that leave the rea
     }
   };
 
+  const handleDelete = async () => {
+    if (!initialArticle?.slug) return;
+    const confirmDelete = window.confirm(`Are you sure you want to delete "${initialArticle.title}"? This action cannot be undone.`);
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/articles/${initialArticle.slug}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        if (onDeleteArticle) {
+          onDeleteArticle(initialArticle.slug);
+        }
+        onReturnHome();
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Failed to delete article.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error deleting article.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const insertSnippet = (snippet: string) => {
     setContent((prev) => prev + '\n\n' + snippet);
   };
 
-  // 1. Password Gate View
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white border border-[#e7e5e4] p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-[#1c1917] text-white flex items-center justify-center font-serif text-lg font-bold">
-              AV
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-[#1c1917]">Admin Writing Console</h1>
-              <p className="text-xs text-[#78716c]">Direct Google Drive Publishing Engine</p>
-            </div>
-          </div>
-
-          <div className="mb-6 p-3.5 bg-[#f5f5f4] text-xs text-[#57534e] leading-relaxed border-l-2 border-[#1c1917]">
-            <div className="flex items-center gap-1.5 font-medium text-[#1c1917] mb-1">
-              <Lock className="w-3.5 h-3.5" />
-              Protected by ADMIN_SECRET_KEY
-            </div>
-            Articles written here are compiled with YAML frontmatter and uploaded directly to your target Google Drive folder via the Drive API.
-          </div>
-
-          <form onSubmit={handleAuthSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#78716c] mb-1">
-                Passcode / Admin Secret
-              </label>
-              <input
-                type="password"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Enter ADMIN_SECRET_KEY..."
-                className="w-full px-3 py-2.5 border border-[#d6d3d1] focus:outline-none focus:border-[#1c1917] text-sm font-mono"
-                autoFocus
-              />
-              {authError && <p className="text-xs text-red-600 mt-1">{authError}</p>}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isVerifying}
-              className="w-full py-2.5 bg-[#1c1917] hover:bg-black text-white text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
-            >
-              {isVerifying ? 'Verifying...' : 'Unlock Editor'}
-            </button>
-          </form>
-
-          {/* Navigation Controls */}
-          <div className="mt-4 pt-4 border-t border-[#e7e5e4] flex items-center justify-end text-xs text-[#78716c]">
-            <button
-              onClick={onReturnHome}
-              className="hover:text-[#1c1917] flex items-center gap-1 cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Full Medium-Style Composer View
+  // Full Composer / Editor View (Always directly open and accessible)
   return (
     <div className="min-h-screen bg-[#faf9f6] text-[#1c1917] pb-24">
       {/* Sub-Header Actions */}
@@ -266,15 +203,30 @@ Summarize your core insights in three clear, memorable points that leave the rea
               className="flex items-center gap-1.5 text-xs text-[#78716c] hover:text-[#1c1917] transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Blog</span>
+              <span>Back to Articles</span>
             </button>
             <span className="text-[#d6d3d1]">|</span>
+            {isEditingExisting ? (
+              <>
+                <span className="px-2.5 py-1 bg-amber-100 text-amber-900 text-[11px] font-mono font-medium border border-amber-300">
+                  Editing Article: {initialArticle?.title.slice(0, 36)}...
+                </span>
+                <span className="text-[#d6d3d1]">|</span>
+              </>
+            ) : (
+              <>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 text-[11px] font-mono font-medium border border-emerald-300">
+                  Drafting New Article
+                </span>
+                <span className="text-[#d6d3d1]">|</span>
+              </>
+            )}
             <div className="text-xs font-mono text-[#57534e]">
               <span>{stats.words} words</span> · <span>{stats.readTime}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {/* View Switchers */}
             <div className="hidden sm:flex items-center bg-[#f5f5f4] p-0.5 border border-[#e7e5e4] text-xs">
               <button
@@ -303,15 +255,20 @@ Summarize your core insights in three clear, memorable points that leave the rea
               </button>
             </div>
 
-            <button
-              onClick={onOpenSetupModal}
-              className="flex items-center gap-1 text-xs font-mono text-[#78716c] hover:text-[#1c1917] border border-[#d6d3d1] bg-white px-2.5 py-1.5 cursor-pointer"
-              title="View Google Drive & Cloud credentials"
-            >
-              <Cloud className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Drive Config</span>
-            </button>
+            {/* Delete button (if editing existing) */}
+            {isEditingExisting && (
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800 border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-2 cursor-pointer transition-colors"
+                title="Delete this article permanently"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">{isDeleting ? 'Deleting...' : 'Delete'}</span>
+              </button>
+            )}
 
+            {/* Primary Action Button */}
             <button
               onClick={handlePublish}
               disabled={isPublishing}
@@ -320,14 +277,26 @@ Summarize your core insights in three clear, memorable points that leave the rea
               {isPublishing ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Syncing to Drive...</span>
+                  <span>{isEditingExisting ? 'Saving Changes...' : 'Publishing...'}</span>
                 </>
               ) : (
                 <>
                   <Send className="w-3.5 h-3.5" />
-                  <span>Publish to Drive</span>
+                  <span>{isEditingExisting ? 'Save & Update Article' : 'Publish Article'}</span>
                 </>
               )}
+            </button>
+
+            {/* Logout Admin */}
+            <button
+              onClick={() => {
+                localStorage.removeItem('atiendriya_admin_auth');
+                onSetAdmin(false);
+              }}
+              title="Lock Admin mode"
+              className="p-2 text-[#78716c] hover:text-[#1c1917] border border-[#d6d3d1] bg-white cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -348,15 +317,10 @@ Summarize your core insights in three clear, memorable points that leave the rea
             ) : (
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
             )}
-            <span>{publishResult.message}</span>
+            <span className="font-medium">{publishResult.message}</span>
           </div>
 
           <div className="flex items-center gap-3">
-            {publishResult.fileId && (
-              <span className="font-mono text-[11px] text-emerald-700">
-                Drive ID: {publishResult.fileId}
-              </span>
-            )}
             <button
               onClick={() => setPublishResult({ type: 'idle', message: '' })}
               className="underline text-[11px] cursor-pointer"
@@ -387,7 +351,7 @@ Summarize your core insights in three clear, memorable points that leave the rea
 
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#78716c] mb-1">
-                URL Slug (.md filename in Drive)
+                URL Identifier / Slug
               </label>
               <input
                 type="text"
@@ -448,6 +412,12 @@ Summarize your core insights in three clear, memorable points that leave the rea
             >
               <Table className="w-3 h-3" /> Valuation Table
             </button>
+            <button
+              onClick={() => insertSnippet('```python\n# Calculate implied cost of equity using CAPM\nrisk_free = 0.071  # 10-Yr Indian G-Sec\nmarket_risk_premium = 0.055\nbeta = 1.15\n\ncost_of_equity = risk_free + (beta * market_risk_premium)\nprint(f"Cost of Equity: {cost_of_equity:.2%}")\n```')}
+              className="px-2 py-1 bg-[#f5f5f4] hover:bg-[#e7e5e4] text-[#44403c] text-[11px] font-mono flex items-center gap-1 cursor-pointer"
+            >
+              <span className="font-bold text-emerald-700">Py</span> Python Model
+            </button>
           </div>
         </div>
 
@@ -461,12 +431,12 @@ Summarize your core insights in three clear, memorable points that leave the rea
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Markdown Editor</span>
                 </div>
-                <span className="text-[11px] font-mono">Auto-generates YAML frontmatter</span>
+                <span className="text-[11px] font-mono">Supports Markdown & Python snippets</span>
               </div>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Write your thesis in Markdown..."
+                placeholder="Write your research thesis in Markdown..."
                 className="w-full flex-1 p-5 font-mono text-sm leading-relaxed text-[#1c1917] resize-none focus:outline-none min-h-[500px]"
               />
             </div>

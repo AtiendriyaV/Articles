@@ -7,7 +7,6 @@ export interface ArticleMetadata {
   readTime: string;
   author?: string;
   coverImage?: string;
-  driveFileId?: string;
   publishedAt?: string;
 }
 
@@ -24,16 +23,4 @@ export interface PublishArticlePayload {
   readTime?: string;
   author?: string;
   passcode?: string;
-}
-
-export interface DriveConfigStatus {
-  isConfigured: boolean;
-  hasClientEmail: boolean;
-  hasPrivateKey: boolean;
-  hasFolderId: boolean;
-  folderId?: string;
-  folderName?: string;
-  connectionOk: boolean;
-  message: string;
-  filesCount?: number;
 }

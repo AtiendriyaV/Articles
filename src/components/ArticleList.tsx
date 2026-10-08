@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Clock, Calendar, ArrowUpRight, FolderOpen, RefreshCw, Filter } from 'lucide-react';
+import { Search, Clock, Calendar, ArrowUpRight, RefreshCw, Filter, Edit3 } from 'lucide-react';
 import { Article } from '@/lib/types';
 
 interface ArticleListProps {
@@ -7,6 +7,7 @@ interface ArticleListProps {
   onSelectArticle: (article: Article) => void;
   isLoading: boolean;
   onRefresh: () => void;
+  onEditArticle?: (article: Article) => void;
 }
 
 export const ArticleList: React.FC<ArticleListProps> = ({
@@ -14,6 +15,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
   onSelectArticle,
   isLoading,
   onRefresh,
+  onEditArticle,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
@@ -64,10 +66,10 @@ export const ArticleList: React.FC<ArticleListProps> = ({
             onClick={onRefresh}
             disabled={isLoading}
             className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[#d6d3d1] hover:border-[#1c1917] text-xs font-mono text-[#57534e] hover:text-[#1c1917] transition-colors cursor-pointer disabled:opacity-50"
-            title="Revalidate and fetch latest from Google Drive"
+            title="Refresh research articles"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Revalidate Cache</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -121,14 +123,6 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                 <span>{article.readTime}</span>
                 <span aria-hidden="true">·</span>
                 <span>By {article.author || 'Atiendriya Verma'}</span>
-                {article.driveFileId && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span className="text-emerald-700 flex items-center gap-1">
-                      <FolderOpen className="w-3 h-3" /> Drive Synced
-                    </span>
-                  </>
-                )}
               </div>
 
               {/* Title */}
@@ -154,9 +148,25 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                   ))}
                 </div>
 
-                <div className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-[#1c1917] group-hover:translate-x-1 transition-transform">
-                  <span>Read Thesis</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-3">
+                  {onEditArticle && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditArticle(article);
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono text-[#44403c] bg-[#f5f5f4] hover:bg-[#e7e5e4] border border-[#d6d3d1] hover:text-[#1c1917] cursor-pointer transition-colors"
+                      title="Edit this article in Admin Editor"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Article</span>
+                    </button>
+                  )}
+
+                  <div className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-[#1c1917] group-hover:translate-x-1 transition-transform">
+                    <span>Read Thesis</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </div>
                 </div>
               </div>
             </article>

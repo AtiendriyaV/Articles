@@ -1,12 +1,12 @@
 import React from 'react';
-import { Linkedin, ExternalLink, ArrowUp } from 'lucide-react';
+import { Linkedin, ExternalLink, ArrowUp, ShieldCheck } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (view: 'home' | 'about' | 'write') => void;
-  onOpenSetupModal: () => void;
+  isAdmin?: boolean;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenSetupModal }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigate, isAdmin }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -38,15 +38,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenSetupModal }) 
           </button>
           <button
             onClick={() => onNavigate('write')}
-            className="hover:text-[#1c1917] cursor-pointer"
+            className="hover:text-[#1c1917] cursor-pointer flex items-center gap-1.5"
           >
-            Admin Writer
-          </button>
-          <button
-            onClick={onOpenSetupModal}
-            className="hover:text-[#1c1917] cursor-pointer"
-          >
-            Google Cloud Setup
+            {isAdmin && <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />}
+            <span>Admin Writer</span>
           </button>
           <a
             href="https://www.linkedin.com/in/atiendriya-verma/"

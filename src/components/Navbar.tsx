@@ -1,28 +1,25 @@
 import React from 'react';
 import { 
-  BookOpen, 
-  User, 
   PenTool, 
-  Cloud, 
-  ExternalLink, 
   Linkedin, 
-  CheckCircle2, 
-  AlertCircle 
+  ShieldCheck, 
+  Lock,
+  Unlock,
+  Edit3
 } from 'lucide-react';
-import { DriveConfigStatus } from '@/lib/types';
 
 interface NavbarProps {
   currentView: 'home' | 'about' | 'write' | 'article';
   onNavigate: (view: 'home' | 'about' | 'write') => void;
-  driveStatus: DriveConfigStatus | null;
-  onOpenSetupModal: () => void;
+  isAdmin: boolean;
+  onToggleAdmin: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentView,
   onNavigate,
-  driveStatus,
-  onOpenSetupModal,
+  isAdmin,
+  onToggleAdmin,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#e7e5e4] transition-all">
@@ -81,18 +78,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Write</span>
           </button>
 
-          {/* Drive Status Badge & Cloud Setup Trigger */}
+          {/* Admin Access Toggle Badge */}
           <button
-            onClick={onOpenSetupModal}
-            title="Google Drive CMS & Cloud Console Setup Status"
-            className="ml-2 flex items-center gap-1.5 px-2.5 py-1 text-[11px] border border-[#e7e5e4] bg-white hover:bg-[#f5f5f4] text-[#44403c] transition-colors cursor-pointer"
+            onClick={onToggleAdmin}
+            title={isAdmin ? "Admin mode active (Click to switch)" : "Unlock Admin editing access"}
+            className={`ml-2 flex items-center gap-1.5 px-2.5 py-1 text-[11px] border transition-colors cursor-pointer ${
+              isAdmin 
+                ? 'border-[#1c1917] bg-[#1c1917] text-white shadow-xs' 
+                : 'border-[#e7e5e4] bg-white hover:bg-[#f5f5f4] text-[#57534e]'
+            }`}
           >
-            <Cloud className="w-3.5 h-3.5 text-[#78716c]" />
-            <span className="hidden sm:inline">Drive CMS</span>
-            {driveStatus?.connectionOk ? (
-              <span className="w-2 h-2 rounded-full bg-emerald-500" title="Connected to Google Drive" />
+            {isAdmin ? (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="font-medium tracking-tight">Admin Active</span>
+              </>
             ) : (
-              <span className="w-2 h-2 rounded-full bg-amber-500" title="Local CMS Mode (Click to connect GCP)" />
+              <>
+                <Lock className="w-3.5 h-3.5 text-[#78716c]" />
+                <span className="hidden sm:inline">Admin Access</span>
+              </>
             )}
           </button>
 
