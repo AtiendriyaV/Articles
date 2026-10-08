@@ -15,10 +15,10 @@ import {
 
 interface AboutViewProps {
   onExploreArticles: () => void;
-  onOpenWritePortal: () => void;
+  onOpenWritePortal?: () => void;
 }
 
-export const AboutView: React.FC<AboutViewProps> = ({ onExploreArticles, onOpenWritePortal }) => {
+export const AboutView: React.FC<AboutViewProps> = ({ onExploreArticles }) => {
   return (
     <div className="min-h-screen bg-[#faf9f6] text-[#1c1917] py-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto space-y-16">

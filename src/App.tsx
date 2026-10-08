@@ -5,6 +5,7 @@ import { ArticleList } from './components/ArticleList';
 import { ArticleReader } from './components/ArticleReader';
 import { AboutView } from './components/AboutView';
 import { AdminPortal } from './components/AdminPortal';
+import { AdminPasswordModal } from './components/AdminPasswordModal';
 import { Footer } from './components/Footer';
 import { Article } from '@/lib/types';
 import { SEED_ARTICLES } from '@/lib/seedData';
@@ -15,7 +16,13 @@ export default function App() {
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [articles, setArticles] = useState<Article[]>(SEED_ARTICLES);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState<boolean>(true);
+
+  // Default mode is viewer active mode unless authorized with password
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    return localStorage.getItem('atiendriya_admin_auth') === 'Vermakk@1972';
+  });
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+  const [pendingEditArticle, setPendingEditArticle] = useState<Article | null>(null);
 
   // Load articles from backend storage
   const loadArticles = useCallback(async (forceRevalidate = false) => {
@@ -81,22 +88,41 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleToggleAdmin = () => {
-    if (isAdmin) {
-      // Navigate to write portal
-      handleNavigate('write');
+  const handleOpenAdminLogin = () => {
+    setShowAdminLoginModal(true);
+  };
+
+  const handleLogoutAdmin = () => {
+    localStorage.removeItem('atiendriya_admin_auth');
+    setIsAdmin(false);
+    setEditingArticle(null);
+    if (currentView === 'write') {
+      handleNavigate('home');
+    }
+  };
+
+  const handleAdminLoginSuccess = () => {
+    setIsAdmin(true);
+    setShowAdminLoginModal(false);
+    if (pendingEditArticle) {
+      const target = pendingEditArticle;
+      setPendingEditArticle(null);
+      setEditingArticle(target);
+      setSelectedArticle(null);
+      setCurrentView('write');
+      window.history.pushState({}, '', '/admin/write');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Grant instant admin access and navigate to write portal
-      localStorage.setItem('atiendriya_admin_auth', 'true');
-      setIsAdmin(true);
       handleNavigate('write');
     }
   };
 
   const handleEditArticle = (article: Article) => {
-    // Automatically enable admin mode so user has full edit access without interruption
-    localStorage.setItem('atiendriya_admin_auth', 'true');
-    setIsAdmin(true);
+    if (!isAdmin) {
+      setPendingEditArticle(article);
+      setShowAdminLoginModal(true);
+      return;
+    }
     setEditingArticle(article);
     setSelectedArticle(null);
     setCurrentView('write');
@@ -145,7 +171,8 @@ export default function App() {
         currentView={currentView}
         onNavigate={handleNavigate}
         isAdmin={isAdmin}
-        onToggleAdmin={handleToggleAdmin}
+        onOpenAdminLogin={handleOpenAdminLogin}
+        onLogoutAdmin={handleLogoutAdmin}
       />
 
       {/* Main Content View Switcher */}
@@ -168,6 +195,7 @@ export default function App() {
                 onEditArticle={handleEditArticle}
                 isLoading={isLoading}
                 onRefresh={() => loadArticles(true)}
+                isAdmin={isAdmin}
               />
             </div>
           </>
@@ -176,7 +204,6 @@ export default function App() {
         {currentView === 'about' && (
           <AboutView
             onExploreArticles={() => handleNavigate('home')}
-            onOpenWritePortal={() => handleNavigate('write')}
           />
         )}
 
@@ -201,6 +228,7 @@ export default function App() {
             onBack={() => handleNavigate('home')}
             onEditArticle={handleEditArticle}
             onArticleUpdated={handleArticleUpdated}
+            isAdmin={isAdmin}
           />
         )}
       </main>
@@ -209,6 +237,17 @@ export default function App() {
       <Footer
         onNavigate={handleNavigate}
         isAdmin={isAdmin}
+        onOpenAdminLogin={handleOpenAdminLogin}
+      />
+
+      {/* Admin Password Gate Modal */}
+      <AdminPasswordModal
+        isOpen={showAdminLoginModal}
+        onClose={() => {
+          setShowAdminLoginModal(false);
+          setPendingEditArticle(null);
+        }}
+        onSuccess={handleAdminLoginSuccess}
       />
     </div>
   );

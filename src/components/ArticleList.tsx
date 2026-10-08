@@ -8,6 +8,7 @@ interface ArticleListProps {
   isLoading: boolean;
   onRefresh: () => void;
   onEditArticle?: (article: Article) => void;
+  isAdmin?: boolean;
 }
 
 export const ArticleList: React.FC<ArticleListProps> = ({
@@ -16,6 +17,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
   isLoading,
   onRefresh,
   onEditArticle,
+  isAdmin = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
@@ -149,7 +151,7 @@ export const ArticleList: React.FC<ArticleListProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {onEditArticle && (
+                  {isAdmin && onEditArticle && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

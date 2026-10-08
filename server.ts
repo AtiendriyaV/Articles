@@ -60,9 +60,9 @@ app.get('/api/articles/:slug', async (req, res) => {
 // Verify Admin Passcode or auto-check
 app.post('/api/verify-key', (req, res) => {
   const { passcode } = req.body;
-  const configuredKey = process.env.ADMIN_SECRET_KEY || 'alpha-research-2026';
-  if (!passcode || (passcode.trim() !== configuredKey.trim() && passcode.trim() !== 'alpha-research-2026')) {
-    return res.status(401).json({ success: false, message: 'Invalid Admin Secret Key' });
+  const configuredKey = process.env.ADMIN_SECRET_KEY || 'Vermakk@1972';
+  if (!passcode || passcode.trim() !== configuredKey.trim()) {
+    return res.status(401).json({ success: false, message: 'Invalid Admin Password' });
   }
   return res.json({ success: true, message: 'Authorized' });
 });
@@ -70,8 +70,13 @@ app.post('/api/verify-key', (req, res) => {
 // Publish or Update article
 app.post('/api/publish', async (req, res) => {
   try {
-    const payload: PublishArticlePayload & { originalSlug?: string } = req.body;
-    const { title, slug, originalSlug, content, tags, excerpt } = payload;
+    const payload: PublishArticlePayload & { originalSlug?: string; passcode?: string } = req.body;
+    const { title, slug, originalSlug, content, tags, excerpt, passcode } = payload;
+
+    const configuredKey = process.env.ADMIN_SECRET_KEY || 'Vermakk@1972';
+    if (passcode && passcode.trim() !== configuredKey.trim()) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: Invalid Admin Password' });
+    }
 
     if (!title || !title.trim()) {
       return res.status(400).json({ success: false, message: 'Article title is required' });
